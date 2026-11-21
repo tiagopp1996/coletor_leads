@@ -14,6 +14,7 @@ from aws_msk_iam_sasl_signer import MSKAuthTokenProvider
 # ---------------------------------------------------------------------------
 # Configuração
 # ---------------------------------------------------------------------------
+SECRET_KFK = "leads/kakfa-server"
 REGION = "us-east-1"
 TOPIC_LOG = "logins"
 TOPIC_NAV = "navegacao"
@@ -25,7 +26,7 @@ class MSKTokenProvider(AbstractTokenProvider):
 
 def get_kfk_server():
     client = boto3.client("secretsmanager", region_name=REGION)
-    s = json.loads(client.get_secret_value(SecretId="leads/kakfa-server")["SecretString"])
+    s = json.loads(client.get_secret_value(SecretId=SECRET_KFK)["SecretString"])
     return s['server']
 
 def cria_conn_kafka():
@@ -165,7 +166,6 @@ fake = cria_menus(fake)
 # DIRETORIO = "C:\\Users\\tiago\\Desktop\\Migracao\\POS\\XPe - Engenharia de Dados\\TCC\\dado_json"
 # ARQUIVO_LOGIN = os.path.join(DIRETORIO, "tb_login.json")
 # ARQUIVO_NAVEGACAO = os.path.join(DIRETORIO, "tb_navegacao.json")
-
 producer = cria_conn_kafka()
     
 
