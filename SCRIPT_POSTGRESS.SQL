@@ -1,12 +1,7 @@
 
--- ==========================================
--- 1. CRIAÇÃO DO BANCO DE DADOS
--- ==========================================
-
 CREATE DATABASE app_garantia;
 
 CREATE SCHEMA IF NOT EXISTS schm;
-
 
 CREATE TABLE APP_GARANTIA.schm.tb_login (
     sessao VARCHAR(32) NOT NULL,
@@ -22,10 +17,6 @@ CREATE TABLE APP_GARANTIA.schm.tb_login (
 
     CONSTRAINT PK_tb_login PRIMARY KEY (sessao, id_login)
 );
-
--- ==========================================
--- TABELA 2: NAVEGACAO
--- ==========================================
 
 CREATE TABLE APP_GARANTIA.schm.tb_navegacao (
     id_nav_trans VARCHAR(32) PRIMARY KEY,
