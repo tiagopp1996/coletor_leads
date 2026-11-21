@@ -4,23 +4,36 @@ import time
 import random
 import json
 import os
+import boto3
 from datetime import datetime
 import socket
 from kafka import KafkaProducer
 from kafka.net.sasl.oauth import AbstractTokenProvider
 from aws_msk_iam_sasl_signer import MSKAuthTokenProvider
 
+# ---------------------------------------------------------------------------
+# Configuração
+# ---------------------------------------------------------------------------
+REGION = "us-east-1"
+TOPIC_LOG = "logins"
+TOPIC_NAV = "navegacao"
+
 class MSKTokenProvider(AbstractTokenProvider):
     def token(self):
         token, _ = MSKAuthTokenProvider.generate_auth_token(REGION)
         return token
 
-def cria_conn_kafka(BOOTSTRAP_SERVERS):
+def get_kfk_server():
+    client = boto3.client("secretsmanager", region_name=REGION)
+    s = json.loads(client.get_secret_value(SecretId="leads/kakfa-server")["SecretString"])
+    return s['server']
+
+def cria_conn_kafka():
 
     tp = MSKTokenProvider()
 
     producer = KafkaProducer(
-        bootstrap_servers=BOOTSTRAP_SERVERS,
+        bootstrap_servers=get_kfk_server(),
         security_protocol="SASL_SSL",
         sasl_mechanism="OAUTHBEARER",
         sasl_oauth_token_provider=tp,
@@ -153,15 +166,7 @@ fake = cria_menus(fake)
 # ARQUIVO_LOGIN = os.path.join(DIRETORIO, "tb_login.json")
 # ARQUIVO_NAVEGACAO = os.path.join(DIRETORIO, "tb_navegacao.json")
 
-# Configurações do MSK
-REGION = "us-east-1"
-BOOTSTRAP_SERVERS = [
-    "boot-jpn6tcjq.c3.kafka-serverless.us-east-1.amazonaws.com:9098"
-]
-TOPIC_LOG = "logins"
-TOPIC_NAV = "navegacao"
-
-producer = cria_conn_kafka(BOOTSTRAP_SERVERS)
+producer = cria_conn_kafka()
     
 
 try:
@@ -186,6 +191,3 @@ try:
 
 except KeyboardInterrupt:
     print("\nExecução interrompida pelo usuário (Ctrl + C).")        
-
-
-
