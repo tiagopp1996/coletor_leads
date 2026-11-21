@@ -15,12 +15,9 @@ from pyspark.sql.streaming import StreamingQueryListener
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 SECRET_NAME = os.getenv("RDS_SECRET_NAME", "leads/rds/postgres")
-RDS_DATABASE = os.getenv("RDS_DATABASE", "app_garantia")
+SECRET_KFK = os.getenv("KFK_SECRET_NAME", "leads/kakfa-server")
 
-KAFKA_SERVERS = os.getenv(
-    "KAFKA_BOOTSTRAP_SERVERS",
-    "boot-oyv8aapg.c3.kafka-serverless.us-east-1.amazonaws.com:9098",
-)
+RDS_DATABASE = os.getenv("RDS_DATABASE", "app_garantia")
 
 S3_BUCKET = "s3://937525203292-sor-937525203292-us-east-1-an"
 CHECKPOINT_BASE = os.getenv(
@@ -93,6 +90,10 @@ def config_spark():
 # ---------------------------------------------------------------------------
 # Credenciais
 # ---------------------------------------------------------------------------
+def get_kfk_server():
+    client = boto3.client("secretsmanager", region_name=AWS_REGION)
+    s = json.loads(client.get_secret_value(SecretId=SECRET_KFK)["SecretString"])
+    return s['server']
 
 def get_rds_config():
     client = boto3.client("secretsmanager", region_name=AWS_REGION)
@@ -110,7 +111,7 @@ def get_rds_config():
 # Leitura + normalização
 # ---------------------------------------------------------------------------
 
-def read_kafka(spark, topic, schema):
+def read_kafka(spark, topic, schema,KAFKA_SERVERS):
     """Lê um tópico e devolve um DataFrame streaming com o JSON em colunas."""
     max_offsets = os.getenv("MAX_OFFSETS_PER_TRIGGER")  # opcional
     reader = (
@@ -330,10 +331,11 @@ def write_jdbc(db, table, keys):
 def main():
     spark = config_spark()
     db = get_rds_config()
+    kfk = get_kfk_server()
 
     #Coleta dos Tópicos
-    df_logins = normalize_login(read_kafka(spark, "logins", LOGIN_SCHEMA))
-    df_navegacao = normalize_navegacao(read_kafka(spark, "navegacao", NAVEGACAO_SCHEMA))
+    df_logins = normalize_login(read_kafka(spark, "logins", LOGIN_SCHEMA,kfk))
+    df_navegacao = normalize_navegacao(read_kafka(spark, "navegacao", NAVEGACAO_SCHEMA,kfk))
 
     #print em tela do topico para debug
     df_logins.writeStream.queryName("debug_logins").format("console").option("numRows", 5).option("truncate", "false").trigger(processingTime="10 seconds").start()
